@@ -47,7 +47,7 @@ jobs:
           
           # Restart application with PM2
           echo "🔄 Restarting application..."
-          pm2 restart blue-green-app --env blue
+          pm2 restart blue-app
           
           # Wait for application to start
           sleep 10
