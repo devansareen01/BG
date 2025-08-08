@@ -2,7 +2,7 @@ name: Deploy to Green Environment
 
 on:
   push:
-    branches: [ deploy ]
+    branches: [ Deploy ]
 
 jobs:
   test-and-deploy:
