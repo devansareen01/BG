@@ -1,0 +1,144 @@
+name: Deploy to Green Environment
+
+on:
+  push:
+    branches: [ deploy ]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Test server startup
+      run: |
+        timeout 30s npm start &
+        sleep 10
+        npm run health-check
+        pkill -f "node server.js" || true
+        
+    - name: Deploy to Green Server
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.GREEN_SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_SSH_PORT }}
+        script: |
+          echo "🚀 Starting Green deployment..."
+          
+          # Navigate to application directory
+          cd /var/www/blue-green-app
+          
+          # Pull latest code from deploy branch
+          git fetch origin
+          git reset --hard origin/deploy
+          
+          # Install dependencies
+          npm ci --production
+          
+          # Run database seeding
+          echo "🌱 Running database seeding..."
+          npm run seed
+          
+          # Restart application with PM2
+          echo "🔄 Restarting application..."
+          pm2 restart blue-green-app --env green
+          
+          # Wait for application to start
+          sleep 10
+          
+          # Health check
+          echo "🏥 Performing health check..."
+          curl -f http://localhost:3000/health || exit 1
+          
+          echo "✅ Green deployment completed successfully!"
+          
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Green deployment successful"
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "🎉 *Green Deployment Successful!*",
+              "attachments": [
+                {
+                  "color": "good",
+                  "fields": [
+                    {
+                      "title": "Environment",
+                      "value": "Green (Staging)",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "deploy",
+                      "short": true
+                    },
+                    {
+                      "title": "Status",
+                      "value": "✅ Success",
+                      "short": true
+                    },
+                    {
+                      "title": "Timestamp",
+                      "value": "'$(date -u +"%Y-%m-%d %H:%M:%S UTC")'",
+                      "short": true
+                    }
+                  ],
+                  "footer": "Blue-Green Deployment Pipeline"
+                }
+              ]
+            }' \
+            https://hooks.slack.com/services/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
+        else
+          echo "❌ Green deployment failed"
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "🚨 *Green Deployment Failed!*",
+              "attachments": [
+                {
+                  "color": "danger",
+                  "fields": [
+                    {
+                      "title": "Environment",
+                      "value": "Green (Staging)",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "deploy",
+                      "short": true
+                    },
+                    {
+                      "title": "Status",
+                      "value": "❌ Failed",
+                      "short": true
+                    },
+                    {
+                      "title": "Timestamp",
+                      "value": "'$(date -u +"%Y-%m-%d %H:%M:%S UTC")'",
+                      "short": true
+                    }
+                  ],
+                  "footer": "Blue-Green Deployment Pipeline"
+                }
+              ]
+            }' \
+            https://hooks.slack.com/services/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
+        fi
