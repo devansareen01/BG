@@ -101,6 +101,7 @@ const seedData = async () => {
     console.log(`👥 Users: ${userCount}`);
     console.log(`🛍️ Products: ${productCount}`);
     console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+    console.log(`🗑️ Collections cleared: ${collectionNames.filter(name => !name.startsWith('system.')).join(', ')}`);
 
     await mongoose.connection.close();
     console.log('🔌 Database connection closed');
