@@ -35,7 +35,7 @@ jobs:
           echo "🚀 Starting Green deployment..."
           
           # Navigate to application directory
-          cd /var/www/blue-green-app
+          cd /green-app/BG
           
           # Pull latest code from deploy branch
           git fetch origin

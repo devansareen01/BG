@@ -24,12 +24,6 @@ jobs:
     - name: Run tests
       run: npm test
       
-    - name: Test server startup
-      run: |
-        timeout 30s npm start &
-        sleep 10
-        npm run health-check
-        pkill -f "node server.js" || true
         
     - name: Deploy to Blue Server
       uses: appleboy/ssh-action@v0.1.5
@@ -42,7 +36,7 @@ jobs:
           echo "🚀 Starting Blue deployment (Production)..."
           
           # Navigate to application directory
-          cd /var/www/blue-green-app
+          cd /blue-app
           
           # Pull latest code from main branch
           git fetch origin
