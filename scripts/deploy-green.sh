@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Green Deployment Script
+# Green Deployment
 # This script handles the complete green environment deployment
 
 set -e  # Exit on any error
