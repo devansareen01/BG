@@ -34,7 +34,7 @@ jobs:
       run: |
         echo "🚀 Starting Green deployment..."
         
-        # Create SSH command with proper key handling
+     
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_USERNAME }}@${{ secrets.GREEN_SERVER_HOST }} << 'EOF'
           echo "🚀 Starting Green deployment..."
           
