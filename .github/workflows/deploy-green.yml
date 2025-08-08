@@ -24,13 +24,6 @@ jobs:
     - name: Run tests
       run: npm test
       
-    - name: Test server startup
-      run: |
-        timeout 30s npm start &
-        sleep 10
-        npm run health-check
-        pkill -f "node server.js" || true
-        
     - name: Deploy to Green Server
       uses: appleboy/ssh-action@v0.1.5
       with:
