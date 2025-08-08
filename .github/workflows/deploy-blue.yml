@@ -95,7 +95,7 @@ jobs:
                 }
               ]
             }" \
-            "https://hooks.slack.com/services/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"
+            "https://hooks.slack.com/services/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"
         else
           echo "❌ Blue deployment failed"
           curl -X POST -H 'Content-type: application/json' \
@@ -130,5 +130,5 @@ jobs:
                 }
               ]
             }" \
-            "https://hooks.slack.com/services/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"
+            "https://hooks.slack.com/services/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"
         fi

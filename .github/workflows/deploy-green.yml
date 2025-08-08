@@ -98,7 +98,7 @@ jobs:
                 }
               ]
             }" \
-            "https://hooks.slack.com/services/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"
+            "https://hooks.slack.com/services/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"
         else
           echo "❌ Green deployment failed"
           curl -X POST -H 'Content-type: application/json' \
@@ -133,5 +133,5 @@ jobs:
                 }
               ]
             }" \
-            "https://hooks.slack.com/services/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"
+            "https://hooks.slack.com/services/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"
         fi
