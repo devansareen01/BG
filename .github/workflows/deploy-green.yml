@@ -24,18 +24,34 @@ jobs:
     - name: Run tests
       run: npm test
       
+    - name: Setup SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        
     - name: Deploy to Green Server
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.GREEN_SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: ${{ secrets.SERVER_SSH_PORT }}
-        script: |
+      run: |
+        echo "🚀 Starting Green deployment..."
+        
+        # Create SSH command with proper key handling
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_USERNAME }}@${{ secrets.GREEN_SERVER_HOST }} << 'EOF'
           echo "🚀 Starting Green deployment..."
           
+          # Debug: Check current directory and list contents
+          echo "Current directory: $(pwd)"
+          echo "Available directories:"
+          ls -la
+          
           # Navigate to application directory
-          cd /green-app/BG
+          cd /green-app/BG || {
+            echo "❌ Failed to navigate to /green-app/BG"
+            echo "Current directory: $(pwd)"
+            echo "Available directories:"
+            ls -la /green-app/ || echo "Directory /green-app/ does not exist"
+            ls -la / || echo "Root directory contents:"
+            exit 1
+          }
           
           # Pull latest code from deploy branch
           git fetch origin
@@ -60,6 +76,7 @@ jobs:
           curl -f http://localhost:3000/health || exit 1
           
           echo "✅ Green deployment completed successfully!"
+        EOF
           
     # - name: Notify deployment status
     #   if: always()
