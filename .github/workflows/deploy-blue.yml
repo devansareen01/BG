@@ -25,34 +25,18 @@ jobs:
       run: npm test
       
         
-    - name: Setup SSH Key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
-        
     - name: Deploy to Blue Server
-      run: |
-        echo "🚀 Starting Blue deployment (Production)..."
-        
-        # Create SSH command with proper key handling
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_USERNAME }}@${{ secrets.BLUE_SERVER_HOST }} << 'EOF'
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.BLUE_SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_SSH_PORT }}
+        script: |
           echo "🚀 Starting Blue deployment (Production)..."
           
-          # Debug: Check current directory and list contents
-          echo "Current directory: $(pwd)"
-          echo "Available directories:"
-          ls -la
-          
-          
-          cd /blue-app/BG || {
-            echo "❌ Failed to navigate to /blue-app"
-            echo "Current directory: $(pwd)"
-            echo "Available directories:"
-            ls -la /blue-app/ || echo "Directory /blue-app/ does not exist"
-            ls -la / || echo "Root directory contents:"
-            exit 1
-          }
+          # Navigate to application directory
+          cd /blue-app/BG
           
           # Pull latest code from main branch
           git fetch origin
@@ -73,7 +57,6 @@ jobs:
           curl -f http://localhost:3000/health || exit 1
           
           echo "✅ Blue deployment completed successfully!"
-        EOF
           
     # - name: Notify deployment status
     #   if: always()
