@@ -33,16 +33,102 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: ${{ secrets.SERVER_SSH_PORT }}
         script: |
-          # Upload and execute the deployment script
-          cat > /tmp/deploy-blue.sh << 'EOF'
-          $(cat scripts/deploy-blue.sh)
-          EOF
+          echo "🚀 Starting Blue deployment (Production)..."
           
-          chmod +x /tmp/deploy-blue.sh
-          /tmp/deploy-blue.sh
+          # Navigate to application directory
+          cd /blue-app/BG
           
-    - name: Notify deployment status
-      if: always()
-      run: |
-        chmod +x scripts/slack-notify.sh
-        ./scripts/slack-notify.sh blue main ${{ job.status }}
+          # Pull latest code from main branch
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Install dependencies
+          npm ci --production
+          
+          # Restart application with PM2
+          echo "🔄 Restarting application..."
+          pm2 restart blue-app
+          
+          # Wait for application to start
+          sleep 10
+          
+          # Health check
+          echo "🏥 Performing health check..."
+          curl -f http://localhost:3000/health || exit 1
+          
+          echo "✅ Blue deployment completed successfully!"
+          
+    # - name: Notify deployment status
+    #   if: always()
+    #   run: |
+    #     if [ ${{ job.status }} == 'success' ]; then
+    #       echo "✅ Blue deployment successful"
+    #       curl -X POST -H 'Content-type: application/json' \
+    #         --data "{
+    #           \"text\": \"🎉 *Blue Deployment Successful!*\",
+    #           \"attachments\": [
+    #             {
+    #               \"color\": \"good\",
+    #               \"fields\": [
+    #                 {
+    #                   \"title\": \"Environment\",
+    #                   \"value\": \"Blue (Production)\",
+    #                   \"short\": true
+    #                 },
+    #                 {
+    #                   \"title\": \"Branch\",
+    #                   \"value\": \"main\",
+    #                   \"short\": true
+    #                 },
+    #                 {
+    #                   \"title\": \"Status\",
+    #                   \"value\": \"✅ Success\",
+    #                   \"short\": true
+    #                 },
+    #                 {
+    #                   \"title\": \"Timestamp\",
+    #                   \"value\": \"$(date -u +'%Y-%m-%d %H:%M:%S UTC')\",
+    #                   \"short\": true
+    #                 }
+    #               ],
+    #               \"footer\": \"Blue-Green Deployment Pipeline\"
+    #             }
+    #           ]
+    #         }" \
+    #         "https://hooks.slack.com/services/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"
+    #     else
+    #       echo "❌ Blue deployment failed"
+    #       curl -X POST -H 'Content-type: application/json' \
+    #         --data "{
+    #           \"text\": \"🚨 *Blue Deployment Failed!*\",
+    #           \"attachments\": [
+    #             {
+    #               \"color\": \"danger\",
+    #               \"fields\": [
+    #                 {
+    #                   \"title\": \"Environment\",
+    #                   \"value\": \"Blue (Production)\",
+    #                   \"short\": true
+    #                 },
+    #                 {
+    #                   \"title\": \"Branch\",
+    #                   \"value\": \"main\",
+    #                   \"short\": true
+    #                 },
+    #                 {
+    #                   \"title\": \"Status\",
+    #                   \"value\": \"❌ Failed\",
+    #                   \"short\": true
+    #                 },
+    #                 {
+    #                   \"title\": \"Timestamp\",
+    #                   \"value\": \"$(date -u +'%Y-%m-%d %H:%M:%S UTC')\",
+    #                   \"short\": true
+    #                 }
+    #               ],
+    #               \"footer\": \"Blue-Green Deployment Pipeline\"
+    #             }
+    #           ]
+    #         }" \
+    #         "https://hooks.slack.com/services/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"
+    #     fi
