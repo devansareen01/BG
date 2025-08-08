@@ -20,6 +20,22 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.model('Product', productSchema);
 
+// Function to clear all schemas and recreate them
+const clearAndRecreateSchemas = async () => {
+  console.log('🔄 Clearing and recreating schemas...');
+  
+  // Delete existing models to clear any cached schemas
+  delete mongoose.models.User;
+  delete mongoose.models.Product;
+  
+  // Recreate models with fresh schemas
+  const User = mongoose.model('User', userSchema);
+  const Product = mongoose.model('Product', productSchema);
+  
+  console.log('✅ Schemas recreated successfully');
+  return { User, Product };
+};
+
 const seedData = async () => {
   try {
     console.log('🌱 Starting database seeding...');
@@ -32,10 +48,30 @@ const seedData = async () => {
     });
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing data
+    // Clear ALL existing data and collections
+    console.log('🧹 Clearing all existing data and collections...');
+    
+    // Get all collection names
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    const collectionNames = collections.map(collection => collection.name);
+    
+    console.log(`📋 Found collections: ${collectionNames.join(', ')}`);
+    
+    // Drop all collections except system collections
+    for (const collectionName of collectionNames) {
+      if (!collectionName.startsWith('system.')) {
+        await mongoose.connection.db.dropCollection(collectionName);
+        console.log(`🗑️ Dropped collection: ${collectionName}`);
+      }
+    }
+    
+    // Clear existing data from our models (in case they exist)
     await User.deleteMany({});
     await Product.deleteMany({});
-    console.log('🧹 Cleared existing data');
+    console.log('🧹 Cleared existing data from models');
+
+    // Clear and recreate schemas for a completely clean state
+    const { User: FreshUser, Product: FreshProduct } = await clearAndRecreateSchemas();
 
     // Seed Users
     const users = [
@@ -44,7 +80,7 @@ const seedData = async () => {
       { name: 'Bob Johnson', email: 'bob@example.com' }
     ];
 
-    await User.insertMany(users);
+    await FreshUser.insertMany(users);
     console.log(`✅ Seeded ${users.length} users`);
 
     // Seed Products
@@ -54,12 +90,12 @@ const seedData = async () => {
       { name: 'Keyboard', price: 79.99, description: 'Mechanical keyboard' }
     ];
 
-    await Product.insertMany(products);
+    await FreshProduct.insertMany(products);
     console.log(`✅ Seeded ${products.length} products`);
 
     // Verify data
-    const userCount = await User.countDocuments();
-    const productCount = await Product.countDocuments();
+    const userCount = await FreshUser.countDocuments();
+    const productCount = await FreshProduct.countDocuments();
     
     console.log(`📊 Database seeded successfully!`);
     console.log(`👥 Users: ${userCount}`);
