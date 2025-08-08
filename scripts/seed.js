@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   email: String,
   createdAt: { type: Date, default: Date.now }
 });
-
+// User model
 const User = mongoose.model('User', userSchema);
 
 // Sample Product Schema
